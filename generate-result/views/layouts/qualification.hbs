@@ -1,0 +1,130 @@
+<html>
+
+<head>
+
+	<style>
+		@font-face {
+			font-family: formula-font;
+			src: url(/fonts/f2-Regular-1cd260c69e89e384ba1b250d39f3e911.woff2) format("opentype");
+		}
+
+		@font-face {
+			font-family: Comfortaa;
+			src: url(/fonts/Comfortaa-VariableFont_wght.ttf) format("opentype");
+		}
+
+		body {
+			background-image: url(https://api.brusselstimes.com/wp-content/uploads/2022/02/edfb1f79-364-1024x683.jpg);
+			color: white;
+			background-repeat: no-repeat;
+			background-size: cover;
+			margin: 0;
+			font-family: formula-font, Comfortaa;
+		}
+
+		.main {
+			width: 100%;
+			height: 100%;
+			backdrop-filter: blur(10px);
+		}
+
+		.content {
+			padding: 4rem;
+		}
+
+		.main-header .club-logo {
+			background-image: url(https://f1karting-m.kartchrono.com/clients/logos/f1karting-m.svg?v=1594180738);
+			width: 4rem;
+			height: 3rem;
+			background-size: contain;
+			background-repeat: no-repeat;
+			margin: 0.5rem 0.5rem 0 0.5rem;
+		}
+
+		.main-header {
+			display: flex;
+			background-color: black;
+		}
+
+		.main-header .race-name {
+			color: white;
+			align-self: center;
+			font-size: 2rem;
+			color: white;
+			align-self: center;
+			font-size: 2rem;
+			flex: 1 auto;
+			display: flex;
+			justify-content: center;
+		}
+
+		.session-name {
+			background-color: #ff5f00;
+			margin: 0.5rem 0 0.5rem 0;
+			padding: 0.2rem;
+			font-size: 1.5rem;
+		}
+
+		.container {
+			display: grid;
+			grid-template-columns: 1fr 1fr 1fr 2fr 1fr 1fr 1fr 1fr 1fr;
+			grid-row-gap: 0.2rem;
+		}
+
+		.container>div {
+			background-color: black;
+			padding: 0.2rem;
+		}
+
+		.best {
+			color: purple;
+		}
+	</style>
+</head>
+
+<body>
+	<div class="main">
+		<div class="content">
+			<div class="main-header">
+				<div class="club-logo"></div>
+				<div class="race-name"><span>{{raceName}}<span></div>
+			</div>
+			<div class="session-name"><span>{{sessionName}}</span></div>
+			<div class="container">
+				<!-- <div class="table-head">
+			</div> -->
+				<div>Pos</div>
+				<div>Q1Num</div>
+				<div>Q2Num</div>
+				<div>Driver</div>
+				<div>Q1</div>
+				<div>Q2</div>
+				<div>Sessions</div>
+				<div>Total</div>
+				<div>Gap</div>
+
+				{{#each data}}
+				<div>{{position}}</div>
+				<div>{{Q1N}}</div>
+				<div>{{Q2N}}</div>
+				<div>{{name}}</div>
+				{{#if hasQ1Best}}
+				<div class="best">{{Q1}}</div>
+				{{else}}
+				<div>{{Q1}}</div>
+				{{/if}}
+				{{#if hasQ2Best}}
+				<div class="best">{{Q2}}</div>
+				{{else}}
+				<div>{{Q2}}</div>
+				{{/if}}
+				<div>{{sessions}}</div>
+				<div>{{total}}</div>
+				<div>{{gap}}</div>
+				{{/each}}
+			</div>
+		</div>
+	</div>
+</body>
+
+</html>

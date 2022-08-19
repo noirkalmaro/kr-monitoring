@@ -1,0 +1,173 @@
+<html>
+
+<head>
+
+	<style>
+		@font-face {
+			font-family: formula-font;
+			src: url(/fonts/f2-Regular-1cd260c69e89e384ba1b250d39f3e911.woff2) format("opentype");
+		}
+
+		@font-face {
+			font-family: Comfortaa;
+			src: url(/fonts/Comfortaa-VariableFont_wght.ttf) format("opentype");
+		}
+
+		body {
+			background-image: url(https://api.brusselstimes.com/wp-content/uploads/2022/02/edfb1f79-364-1024x683.jpg);
+			color: white;
+			background-repeat: no-repeat;
+			background-size: cover;
+			margin: 0;
+			font-family: formula-font, Comfortaa;
+		}
+
+		.main {
+			width: 100%;
+			height: 100%;
+			backdrop-filter: blur(10px);
+			padding-bottom: 10rem;
+		}
+
+		.content {
+			padding: 4rem;
+		}
+
+		.main-header .club-logo {
+			background-image: url(https://f1karting-m.kartchrono.com/clients/logos/f1karting-m.svg?v=1594180738);
+			width: 4rem;
+			height: 3rem;
+			background-size: contain;
+			background-repeat: no-repeat;
+			margin: 0.5rem 0.5rem 0 0.5rem;
+		}
+
+		.main-header {
+			display: flex;
+			background-color: black;
+		}
+
+		.main-header .race-name {
+			color: white;
+			align-self: center;
+			font-size: 2rem;
+			color: white;
+			align-self: center;
+			font-size: 2rem;
+			flex: 1 auto;
+			display: flex;
+			justify-content: center;
+		}
+
+		.session-name {
+			background-color: #ff5f00;
+			margin: 0.5rem 0 0.5rem 0;
+			padding: 0.2rem;
+			font-size: 1.5rem;
+		}
+
+		.container {
+			display: grid;
+			grid-template-columns: 1fr 1fr 2fr 1fr 1fr 1fr 1fr;
+			grid-row-gap: 0.2rem;
+		}
+
+		.container>div {
+			background-color: black;
+			padding: 0.2rem;
+		}
+
+		.best {
+			color: purple;
+		}
+
+		.chart-container {
+			background-color: floralwhite;
+			margin-top: 1rem;
+			filter: opacity(0.5);
+		}
+	</style>
+	<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+	<script>
+		const labels = Array(20).fill(1).map((a, i) => i + 1);
+
+		const data = {
+			labels: labels,
+			datasets: {{{ dataset }}}
+		};
+
+		const config = {
+			type: 'line',
+			data: data,
+			options: {
+				plugins: {
+					legend: {
+						labels: {
+							color: 'rgb(0,0,0)',
+							font: {
+								size: 14,
+								style: 'bold'
+							}
+						}
+					}
+				},
+				animation: {
+					duration: 0
+				},
+				scales: {
+					y: {
+						ticks: {
+							precision: 0
+						}
+					}
+				}
+			},
+		};
+		function drawCharts() {
+			const myChart = new Chart(
+				document.getElementById('myChart'),
+				config
+			);
+		}
+	</script>
+</head>
+
+<body onload="drawCharts()">
+	<div class="main">
+		<div class="content">
+			<div class="main-header">
+				<div class="club-logo"></div>
+				<div class="race-name"><span>{{raceName}}<span></div>
+			</div>
+			<div class="session-name"><span>{{sessionName}}</span></div>
+			<div class="container">
+				<div>Pos</div>
+				<div>Num</div>
+				<div>Driver</div>
+				<div>Best</div>
+				<div>Best Lap</div>
+				<div>Avrg</div>
+				<div>Gap</div>
+
+				{{#each data}}
+				<div>{{position}}</div>
+				<div>{{number}}</div>
+				<div>{{name}}</div>
+				{{#if hasBest}}
+				<div class="best">{{best}}</div>
+				{{else}}
+				<div>{{best}}</div>
+				{{/if}}
+				<div>{{bestLap}}</div>
+				<div>{{avrg}}</div>
+				<div>{{gap}}</div>
+				{{/each}}
+			</div>
+			<div class="chart-container">
+				<canvas id="myChart" width="400" height="100"></canvas>
+			</div>
+		</div>
+	</div>
+</body>
+
+</html>
