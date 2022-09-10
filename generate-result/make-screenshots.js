@@ -15,19 +15,19 @@ const puppeteer = require('puppeteer');
 
 	await page.goto('http://localhost:3000/qualification', {waitUntil: 'load', timeout: 0});
 	await page.waitForTimeout(10000);
-	await page.screenshot({path: 'qualification.png'});
+	await page.screenshot({path: 'sws-137-qualification.png'});
 
 	await page.goto('http://localhost:3000/raceC', {waitUntil: 'load', timeout: 0});
 	await page.waitForTimeout(5000);
-	await page.screenshot({path: 'raceC.png'});
+	await page.screenshot({path: 'sws-137-raceC.png'});
 
 	await page.goto('http://localhost:3000/raceB', {waitUntil: 'load', timeout: 0});
 	await page.waitForTimeout(5000);
-	await page.screenshot({path: 'raceB.png'});
+	await page.screenshot({path: 'sws-137-raceB.png'});
 
 	await page.goto('http://localhost:3000/raceA', {waitUntil: 'load', timeout: 0});
 	await page.waitForTimeout(5000);
-	await page.screenshot({path: 'raceA.png'});
+	await page.screenshot({path: 'sws-137-raceA.png'});
 
 	await browser.close();
 })();

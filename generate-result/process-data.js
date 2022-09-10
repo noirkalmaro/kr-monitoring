@@ -4,34 +4,53 @@ function ProcessQualificationData(session) {
 		qualNum
 	};
 
+	let lapsReached = 0;
+
 	session.data.forEach((d) => {
 		if (d.length) {
 			d.forEach((competitor) => {
-				if (!competitor.laps) {
+				if (!competitor.num || (competitor.laps === 0 && lapsReached > 2)) {
 					return;
 				}
 
+				//---
+				if (Number.isInteger(competitor.last_lap_time_1)) {
+					competitor.last_lap_time_1 = `${~~(competitor.last_lap_time_1 / 1000)}.${~~(competitor.last_lap_time_1 % 1000)}`
+				}
+				//---
+
+				const lapNum = parseInt(competitor.laps);
+
 				if (!res[competitor.num]) {
 					res[competitor.num] = {
-						position:  parseInt(competitor.pos),
+						position: parseInt(competitor.pos),
 						number: competitor.num,
 						name: competitor.name,
-						laps: [],
+						laps: [0],
 						bestLap: 0,
-						diff: competitor.gap,
+						diff: competitor.diff,
+						gap: competitor.gap,
 						avrg: competitor.avg_session_lap,
-						positionSequence: [parseInt(competitor.pos)]
+						positionSequence: [parseInt(competitor.pos)],
+						positionSequenceAlternative: [],
 					};
 				}
 
-				const lapNum = parseInt(competitor.laps);
+				if (Number.isNaN(parseInt(lapNum))) {
+					return;
+				}
+
 				res[competitor.num].position = parseInt(competitor.pos);
 				res[competitor.num].laps[lapNum] = parseFloat(competitor.last_lap_time_1);
 				res[competitor.num].best = parseFloat(competitor.best_lap_time);
-				res[competitor.num].diff = competitor.gap;
+				res[competitor.num].diff = competitor.diff;
+				res[competitor.num].gap = competitor.gap;
 				res[competitor.num].avrg = competitor.avg_session_lap;
 
-				res[competitor.num].positionSequence[lapNum] = (parseInt(competitor.pos));
+				if (!res[competitor.num].positionSequence[lapNum]) {
+					res[competitor.num].positionSequence[lapNum] = (parseInt(competitor.pos));
+					lapsReached = res[competitor.num].positionSequence.length;
+				}
 
 				if (res[competitor.num].best === res[competitor.num].laps[lapNum]
 					&& res[competitor.num].best !== res[competitor.num].laps[res[competitor.num].bestLap]) {
@@ -41,7 +60,116 @@ function ProcessQualificationData(session) {
 		}
 	});
 
+	// const comptArray = Object.values(res).filter(Boolean);
+
+	// const lapsNum = comptArray.reduce(
+	// 	(acc, item) => item.positionSequence.length > acc
+	// 		? item.positionSequence.length
+	// 		: acc,
+	// 	0
+	// );
+
+	// for (let lapIndex = 0; lapIndex < lapsNum; lapIndex++) {
+	// 	const lapsMap = new Map();
+
+	// 	comptArray.forEach((compt, compIndex) => {
+	// 		if (!lapsMap.has(compt.positionSequence[lapIndex])) {
+	// 			lapsMap.set(compt.positionSequence[lapIndex], compIndex);
+
+	// 			return;
+	// 		}
+
+	// 		const lapsSumWithIndexes = getSumsByLap(comptArray, lapIndex).map((item, index) => ({item, index}));
+
+	// 		lapsSumWithIndexes.sort((a, b) => a.item - b.item);
+
+	// 		lapsSumWithIndexes.forEach(({index}, indexPos) => comptArray[index].positionSequence[lapIndex] = indexPos + 1);
+	// 	});
+	// }
+
+	// updateGaps(comptArray);
+
+	// last lap position can be missed for some reason idk why
+	Object.values(res).forEach(v => v &&v.position && (v.positionSequence[v.positionSequence.length - 1] = v.position));
+
 	return res;
+}
+
+function positionCorrectionStep(res) {
+	const lapsNum = res.reduce(
+		(acc, item) => item.positionSequence.length > acc
+			? item.positionSequence.length
+			: acc,
+		0
+	);
+
+	for (let lapIndex = 0; lapIndex < lapsNum; lapIndex++) {
+		const lapsMap = new Map();
+
+		res.forEach((compt, compIndex) => {
+			if (!lapsMap.has(compt.positionSequence[lapIndex])) {
+				lapsMap.set(compt.positionSequence[lapIndex], compIndex);
+
+				return;
+			}
+
+			const emptyPositions = getEmptyPositions(res, lapIndex);
+
+			const near = emptyPositions.filter(ep => ~~(compt.positionSequence[lapIndex] - ep) > 0);
+
+			if (near[0]) {
+				const lapsSum = getSumsByLap(res, lapIndex);
+
+				if (near[0] - compt.positionSequence[lapIndex] > 0) {
+					if (lapsSum[compIndex] - lapsSum[lapsMap.get(lapIndex)] > 0) {
+						compt.positionSequence[lapIndex] = near[0];
+					} else {
+						compt[lapsMap.get(lapIndex)].positionSequence[lapIndex] = near[0];
+					}
+				} else {
+					if (lapsSum[compIndex] - lapsSum[lapsMap.get(lapIndex)] > 0) {
+						compt[lapsMap.get(lapIndex)].positionSequence[lapIndex] = near[0];
+					} else {
+						compt.positionSequence[lapIndex] = near[0];
+					}
+				}
+
+				lapIndex = 0;
+			}
+		});
+	}
+}
+
+function getSumsByLap(res, lapIndex) {
+	const timeSumArray = [];
+	res.forEach((comp, index) => {
+		for (let i = 0; i <= (lapIndex || comp.laps.length - 1); i++) {
+			timeSumArray[index] = timeSumArray[index] ? timeSumArray[index] + comp.laps[i] : comp.laps[i];
+		}
+	});
+
+	return timeSumArray;
+}
+
+function updateGaps(res) {
+	const leaderIndex = res.findIndex((comp) => comp.position === 1);
+	const lapSum = getSumsByLap(res);
+
+	res.forEach((comp, index) => {
+		if (res[leaderIndex].laps.length !== comp.laps.length) {
+			comp.gap = `+${res[leaderIndex].laps.length - comp.laps.length} Laps`;
+
+			return;
+		}
+		comp.gap = `+${(lapSum[index] - lapSum[leaderIndex]).toFixed(3)}`
+	});
+}
+
+function getEmptyPositions(res, lapIndex) {
+	const lapsArray = res.map(comp => comp.positionSequence[lapIndex]);
+	const lapsSet = new Set(lapsArray);
+
+	return new Array(res.length).fill(1).map((a, i) => i + 1).filter((r) => !lapsSet.has(r));
 }
 
 function prepareQualificationViewData(...sessionSets) {
@@ -50,7 +178,7 @@ function prepareQualificationViewData(...sessionSets) {
 		const competitors = Object.values(sessionSet);
 
 		competitors.forEach((competitor) => {
-			if (!competitor.name) return;
+			if (!competitor || !competitor.name) return;
 			let finalResult = result.find((r) => r.name === competitor.name);
 
 			if (finalResult) {
@@ -130,11 +258,11 @@ function prepareRaceData(date, final) {
 	const res = [];
 
 	if (final === 'c') {
-		competitors = ProcessQualificationData(require('./data/20220818/finalC.json'));
+		competitors = ProcessQualificationData(require('./data/20220818/Fri Sep 09 2022-1-20-[SWS SPRINT RACE 137-ФИНАЛ C].json'));
 	} else if (final === 'b') {
-		competitors = ProcessQualificationData(require('./data/20220818/finalB.json'));
+		competitors = ProcessQualificationData(require('./data/20220818/Sat Sep 10 2022-1-22-[SWS SPRINT RACE 137-ФИНАЛ B].json'));
 	} else if (final === 'a') {
-		competitors = ProcessQualificationData(require('./data/20220818/finalA.json'));
+		competitors = ProcessQualificationData(require('./data/20220818/Sat Aug 20 2022-10-26-SWS SPRINT RACE 137-ФИНАЛ A'));
 	}
 
 	Object.values(competitors).forEach((competitor) => {
@@ -170,9 +298,9 @@ function prepareRaceData(date, final) {
 const colors = [
 	'rgb(255,0,0)',
 	'rgb(0,255,0)',
+	'rgb(255,94,19)',
 	'rgb(0,0,255)',
-	'rgb(0,0,255)',
-	'rgb(255,255,0)',
+	'rgb(0,115,20)',
 	'rgb(0,255,255)',
 	'rgb(255,0,255)',
 	'rgb(128,0,0)',
@@ -187,25 +315,27 @@ function getGraphData(date, final) {
 	const res = [];
 
 	if (final === 'c') {
-		competitors = ProcessQualificationData(require('./data/20220818/finalC.json'));
+		competitors = ProcessQualificationData(require('./data/20220818/Fri Sep 09 2022-1-20-[SWS SPRINT RACE 137-ФИНАЛ C].json'));
 	} else if (final === 'b') {
-		competitors = ProcessQualificationData(require('./data/20220818/finalB.json'));
+		competitors = ProcessQualificationData(require('./data/20220818/Sat Sep 10 2022-1-22-[SWS SPRINT RACE 137-ФИНАЛ B].json'));
 	} else if (final === 'a') {
-		competitors = ProcessQualificationData(require('./data/20220818/finalA.json'));
+		competitors = ProcessQualificationData(require('./data/20220818/Sat Aug 20 2022-10-26-SWS SPRINT RACE 137-ФИНАЛ A'));
 	}
 
 	// Red	#FF0000	(255,0,0)
- 	// Lime	#00FF00	(0,255,0)
- 	// Blue	#0000FF	(0,0,255)
- 	// Yellow	#FFFF00	(255,255,0)
- 	// Cyan / Aqua	#00FFFF	(0,255,255)
- 	// Magenta / Fuchsia	#FF00FF	(255,0,255)
- 	// Silver	#C0C0C0	(192,192,192)
- 	// Gray	#808080	(128,128,128)
- 	// Maroon	#800000	(128,0,0)
- 	// Olive	#808000	(128,128,0)
- 	// Green	#008000	(0,128,0)
- 	// Purple	#800080	(128,0,128)
+	// Lime	#00FF00	(0,255,0)
+	// Blue	#0000FF	(0,0,255)
+	// Yellow	#FFFF00	(255,255,0)
+	// Cyan / Aqua	#00FFFF	(0,255,255)
+	// Magenta / Fuchsia	#FF00FF	(255,0,255)
+	// Silver	#C0C0C0	(192,192,192)
+	// Gray	#808080	(128,128,128)
+	// Maroon	#800000	(128,0,0)
+	// Olive	#808000	(128,128,0)
+	// Green	#008000	(0,128,0)
+	// Purple	#800080	(128,0,128)
+
+	console.log('=========');
 
 	Object.values(competitors).forEach((competitor, index) => {
 		if (!competitor) return;
@@ -219,7 +349,7 @@ function getGraphData(date, final) {
 			data: competitor.positionSequence,
 			backgroundColor: colors[index],
 			borderColor: colors[index],
-			pointBackgroundColor: competitor.positionSequence.map((d, i) => ~pitLapsIndexes.indexOf(i) ? 'rgb(0,0,0)' :  colors[index])
+			pointBackgroundColor: competitor.positionSequence.map((d, i) => ~pitLapsIndexes.indexOf(i) ? 'rgb(0,0,0)' : colors[index])
 		});
 	});
 
@@ -235,12 +365,12 @@ function getGraphData(date, final) {
 
 module.exports = {
 	getQualificationViewData(date) {
-		const res1 = ProcessQualificationData(require('./data/20220818/Q1.json'));
-		const res2 = ProcessQualificationData(require('./data/20220818/Q2.json'));
-		const res3 = ProcessQualificationData(require('./data/20220818/Q3.json'));
-		const res4 = ProcessQualificationData(require('./data/20220818/Q4.json'));
-		const res5 = ProcessQualificationData(require('./data/20220818/Q5.json'));
-		const res6 = ProcessQualificationData(require('./data/20220818/Q6.json'));
+		const res1 = ProcessQualificationData(require('./data/20220818/Sat Aug 20 2022-2-5-SWS SPRINT RACE 137-КВАЛИФИКАЦИЯ 1.json'));
+		const res2 = ProcessQualificationData(require('./data/20220818/Sat Aug 20 2022-2-5-SWS SPRINT RACE 137-КВАЛИФИКАЦИЯ 2.json'));
+		const res3 = ProcessQualificationData(require('./data/20220818/Sat Aug 20 2022-2-5-SWS SPRINT RACE 137-КВАЛИФИКАЦИЯ 3.json'));
+		const res4 = ProcessQualificationData(require('./data/20220818/Sat Aug 20 2022-2-6-SWS SPRINT RACE 137-КВАЛИФИКАЦИЯ 4.json'));
+		const res5 = ProcessQualificationData(require('./data/20220818/Sat Aug 20 2022-2-6-SWS SPRINT RACE 137-КВАЛИФИКАЦИЯ 5.json'));
+		const res6 = ProcessQualificationData(require('./data/20220818/Sat Aug 20 2022-2-6-SWS SPRINT RACE 137-КВАЛИФИКАЦИЯ 6.json'));
 
 		return prepareQualificationViewData(res1, res2, res3, res4, res5, res6);
 	},

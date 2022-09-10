@@ -14,7 +14,8 @@
 		}
 
 		body {
-			background-image: url(https://api.brusselstimes.com/wp-content/uploads/2022/02/edfb1f79-364-1024x683.jpg);
+			{{!-- background-image: url(https://api.brusselstimes.com/wp-content/uploads/2022/02/edfb1f79-364-1024x683.jpg); --}}
+			background-image: url(https://p4.wallpaperbetter.com/wallpaper/117/722/353/race-car-formula-one-f1-race-track-hd-wallpaper-preview.jpg);
 			color: white;
 			background-repeat: no-repeat;
 			background-size: cover;
@@ -89,7 +90,7 @@
 	</style>
 	<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 	<script>
-		const labels = Array(20).fill(1).map((a, i) => i + 1);
+		const labels = Array(21).fill(1).map((a, i) => i);
 
 		const data = {
 			labels: labels,
@@ -119,6 +120,9 @@
 						ticks: {
 							precision: 0
 						}
+					},
+					x: {
+						beginAtZero: true
 					}
 				}
 			},
